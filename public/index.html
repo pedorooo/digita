@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Digita! — Tela principal</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="host">
+    <header>
+      <h1 class="logo" data-tiles="DIGITA!">Digita!</h1>
+      <div class="room-code hidden" id="headerCode">Sala <b id="headerCodeText"></b></div>
+    </header>
+
+    <!-- LOBBY: QR no centro, jogadores ao redor -->
+    <section id="lobby" class="hidden">
+      <div class="lobby-stage" id="lobbyStage">
+        <div class="lobby-slots" id="chips"></div>
+        <div class="panel qr-box lobby-center">
+          <img id="qr" alt="QR code para entrar na sala" />
+          <div class="lobby-info">
+          <h2>Escaneie para entrar</h2>
+          <p class="code" id="code"></p>
+          <p class="url muted" id="joinUrl"></p>
+          <p class="player-count" id="playerCount">Esperando jogadores…</p>
+          <div class="lobby-controls">
+            <button id="startBtn" disabled>Começar <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#play"></use></svg></button>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OPÇÕES DA PARTIDA (abre ao clicar em Começar) -->
+      <div class="modal hidden" id="optionsModal" role="dialog" aria-modal="true" aria-labelledby="optionsTitle">
+        <div class="panel options-panel">
+          <h2 class="options-title" id="optionsTitle">Opções da partida</h2>
+          <div class="opt-section">
+            <h3>Duração</h3>
+            <div class="durations" id="durations">
+              <button data-d="30">30s</button>
+              <button data-d="60" class="active">60s</button>
+              <button data-d="90">90s</button>
+              <button data-d="120">120s</button>
+            </div>
+          </div>
+          <div class="opt-section">
+            <h3>Modos <span class="opt-hint" id="modesHint"></span></h3>
+            <div class="modes" id="modes"></div>
+            <p class="opt-note"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#lightning"></use></svg> Acertou em menos de 1 segundo: pontos ×1,25</p>
+          </div>
+          <div class="opt-actions">
+            <button class="soft" id="optBack">Voltar</button>
+            <button id="playBtn">Jogar <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#play"></use></svg></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTAGEM -->
+    <section id="countdown" class="hidden">
+      <div class="countdown-big" id="countdownNum">3</div>
+    </section>
+
+    <!-- JOGO: só jogadores e acertos -->
+    <section id="game" class="hidden">
+      <div class="timer" id="timer">60</div>
+      <div class="player-grid" id="playerGrid"></div>
+      <div class="controls center"><button class="ghost" id="stopBtn">Encerrar rodada</button></div>
+    </section>
+
+    <!-- FIM: antes de revelar -->
+    <section id="ended" class="hidden">
+      <div class="ended-box">
+        <div class="ended-title"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#alarm"></use></svg> Tempo esgotado!</div>
+        <div class="player-grid" id="endedGrid"></div>
+        <button id="revealBtn" class="reveal-btn">Mostrar resultados <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#trophy"></use></svg></button>
+      </div>
+    </section>
+
+    <!-- REVISÃO PALAVRA POR PALAVRA -->
+    <section id="review" class="hidden">
+      <div class="review-top">
+        <span class="muted" id="reviewCount">Palavra 1 de 10</span>
+        <div class="review-progress"><div id="reviewBar"></div></div>
+      </div>
+      <div class="review-body">
+      <div class="review-card" id="reviewCard">
+        <span class="tag" id="reviewTag">normal</span>
+        <div class="review-display" id="reviewDisplay"></div>
+        <div class="review-answer" id="reviewAnswer"></div>
+        <div class="review-who" id="reviewWho"></div>
+        <div class="auto-track" id="autoTrack"><div id="autoBar"></div></div>
+      </div>
+      <aside class="panel review-board">
+        <h2>Placar</h2>
+        <div id="reviewBoard"></div>
+      </aside>
+      </div>
+      <div class="controls center">
+        <button class="ghost" id="autoBtn"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#pause"></use></svg> Pausar</button>
+        <button class="ghost" id="prevBtn"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#caret-left"></use></svg> Anterior</button>
+        <button id="nextBtn" class="big-btn">Próxima <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#caret-right"></use></svg></button>
+        <button class="ghost" id="skipReviewBtn">Pular para o placar <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#skip-forward"></use></svg></button>
+      </div>
+      <p class="muted center-text">Passa sozinho · espaço pausa/continua · setas ← → navegam</p>
+    </section>
+
+    <!-- RESULTADOS -->
+    <section id="results" class="hidden">
+      <div class="podium" id="podium"></div>
+      <div class="results-grid">
+        <div class="panel">
+          <h2>Classificação da rodada</h2>
+          <div id="finalList"></div>
+          <div class="controls">
+            <button id="againBtn">Jogar de novo <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#arrow-clockwise"></use></svg></button>
+            <button class="ghost" id="reviewAgainBtn">Rever palavras</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Destaques da rodada</h2>
+          <div id="awards"></div>
+        </div>
+      </div>
+      <div class="hall" id="resultsHall"></div>
+    </section>
+
+    <section id="connecting">
+      <p class="muted">Criando sala…</p>
+    </section>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/avatar.js"></script>
+  <script src="/icons.js"></script>
+  <script src="/tiles.js"></script>
+  <script src="/host.js"></script>
+</body>
+</html>

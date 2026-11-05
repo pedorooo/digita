@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="theme-color" content="#b76b53" />
+  <title>Digita!</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="play">
+    <!-- ENTRAR -->
+    <form class="screen" id="joinScreen" autocomplete="off">
+      <h1 class="logo" data-tiles="DIGITA!">Digita!</h1>
+      <input id="codeInput" placeholder="Código da sala" maxlength="4" autocapitalize="characters"
+             style="text-transform: uppercase; text-align: center; letter-spacing: .3em" />
+      <input id="nameInput" placeholder="Seu nome" maxlength="16" style="text-align: center" />
+      <p class="muted" style="margin:.2rem 0 0">Escolha seu avatar</p>
+      <div class="avatar-picker" id="avatarPicker"></div>
+      <button type="submit">Entrar</button>
+      <div class="error" id="joinError"></div>
+    </form>
+
+    <!-- ESPERANDO -->
+    <div class="screen hidden" id="waitScreen">
+      <h1 class="logo" data-tiles="DIGITA!">Digita!</h1>
+      <div class="me-avatar" id="meAvatar"></div>
+      <p class="big">Olá, <b id="meName"></b>! <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#hand-waving"></use></svg></p>
+      <div class="my-stats hidden" id="myStats"></div>
+      <p class="muted">Aguardando o host começar…</p>
+      <p class="rules">
+        <span class="tag reversed">ao contrário</span> escreva a palavra do jeito certo · 2 pts<br /><br />
+        <span class="tag emoji">emoji</span> escreva o que o emoji é · 2 pts<br /><br />
+        <span class="tag color">cor da tinta</span> escreva a COR da letra · 3 pts<br /><br />
+        <span class="tag opposite">oposto</span> escreva o contrário · 2 pts<br /><br />
+        <span class="tag number">número</span> escreva o número por extenso · 3 pts<br /><br />
+        menos de 1 segundo: pontos ×1,25
+      </p>
+    </div>
+
+    <!-- CONTAGEM -->
+    <div class="screen hidden" id="countScreen">
+      <div class="countdown-big" id="countNum">3</div>
+    </div>
+
+    <!-- JOGO: cabe inteiro acima do teclado -->
+    <div class="screen hidden" id="gameScreen">
+      <div class="hud">
+        <span><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#star"></use></svg> <span id="score">0</span></span>
+        <span class="tag" id="wordTag">normal</span>
+        <span class="t" id="timeBox"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#timer"></use></svg> <span id="time">60</span>s</span>
+      </div>
+      <div class="word-card" id="card">
+        <div class="w" id="word"></div>
+        <div class="hint" id="hint"></div>
+      </div>
+      <form class="answer-row" id="answerForm" autocomplete="off">
+        <input id="answer" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               enterkeyhint="send" placeholder="digite aqui" />
+        <button type="submit" id="sendBtn" class="send-btn" aria-label="Enviar"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#paper-plane-right"></use></svg></button>
+        <button type="button" id="skipBtn" class="ghost skip-btn" aria-label="Pular"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#fast-forward"></use></svg></button>
+      </form>
+    </div>
+
+    <!-- FIM -->
+    <div class="screen hidden" id="endScreen">
+      <p class="big"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#alarm"></use></svg> Tempo esgotado!</p>
+      <div class="me-avatar" id="endAvatar"></div>
+      <p class="big">Você fez <b id="endScore"></b></p>
+      <p class="muted" id="endWords"></p>
+      <div id="endWaiting" class="muted">Olhe para a tela principal… <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#eye"></use></svg><br />os resultados vão aparecer lá!</div>
+      <div id="endResult" class="hidden">
+        <div class="result-pos" id="endPos"></div>
+        <p class="muted" id="endWinner"></p>
+        <div id="endHighlights"></div>
+        <div class="my-stats" id="endStats"></div>
+      </div>
+    </div>
+
+    <!-- SALA FECHADA -->
+    <div class="screen hidden" id="closedScreen">
+      <h1 class="logo" data-tiles="DIGITA!">Digita!</h1>
+      <p class="big" id="closedMsg">A sala foi fechada.</p>
+      <button type="button" onclick="location.reload()">Entrar em outra sala</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/avatar.js"></script>
+  <script src="/icons.js"></script>
+  <script src="/tiles.js"></script>
+  <script src="/play.js"></script>
+</body>
+</html>
