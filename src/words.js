@@ -1,28 +1,77 @@
 // Lista de palavras em português + dicionário de emojis + gerador da pilha de palavras.
 
 const WORDS = `
-casa gato cachorro janela praia livro escola amigo cidade carro porta mesa cadeira
-banana laranja abacaxi morango uva melancia limão tomate batata cenoura alface feijão
-arroz pão queijo leite café chocolate bolo pizza sorvete suco água fogo terra vento
-chuva nuvem estrela lua sol planeta oceano rio montanha floresta árvore flor folha
-jardim parque ponte estrada rua avenida praça mercado farmácia hospital igreja museu
-teatro cinema música dança festa presente viagem mala avião navio trem ônibus bicicleta
-moto caminhão foguete relógio telefone celular computador teclado mouse tela caneta
-lápis caderno mochila sapato camisa calça vestido chapéu óculos anel colar bolsa
-carteira dinheiro moeda banco trabalho empresa reunião projeto ideia sonho futuro
-passado tempo hora minuto segundo semana mês ano domingo segunda verão inverno
-outono primavera família pai mãe irmão irmã avó avô filho filha bebê criança
-pessoa mulher homem professor aluno médico policial bombeiro cozinheiro artista
-cantor pintor escritor futebol bola gol time jogo vitória derrota campeão medalha
-corrida natação tênis basquete vôlei xadrez cartas dado tabuleiro brinquedo boneca
-pipa balão castelo rei rainha príncipe princesa dragão fada bruxa mágico tesouro
-pirata ilha deserto selva caverna vulcão neve gelo calor frio quente doce salgado
-amargo azedo feliz triste bravo calmo rápido lento grande pequeno alto baixo forte
-fraco novo velho bonito feio limpo sujo cheio vazio claro escuro branco preto
-vermelho azul verde amarelo roxo rosa laranja cinza marrom dourado prata cobre
-leão tigre macaco elefante girafa zebra cavalo vaca porco galinha pato coelho
-rato cobra sapo peixe tubarão baleia golfinho polvo abelha formiga borboleta aranha
-coruja papagaio pinguim urso lobo raposa tartaruga jacaré camelo canguru panda
+casa gato cachorro janela praia livro escola amigo cidade carro porta mesa cadeira banana
+laranja abacaxi morango uva melancia limão tomate batata cenoura alface feijão arroz pão queijo
+leite café chocolate bolo pizza sorvete suco água fogo terra vento chuva nuvem estrela lua sol
+planeta oceano rio montanha floresta árvore flor folha jardim parque ponte estrada rua avenida
+praça mercado farmácia hospital igreja museu teatro cinema música dança festa presente viagem
+mala avião navio trem ônibus bicicleta moto caminhão foguete relógio telefone celular
+computador teclado mouse tela caneta lápis caderno mochila sapato camisa calça vestido chapéu
+óculos anel colar bolsa carteira dinheiro moeda banco trabalho empresa reunião projeto ideia
+sonho futuro passado tempo hora minuto segundo semana mês ano domingo segunda verão inverno
+outono primavera família pai mãe irmão irmã avó filho filha bebê criança pessoa mulher homem
+professor aluno médico policial bombeiro cozinheiro artista cantor pintor escritor futebol bola
+gol time jogo vitória derrota campeão medalha corrida natação tênis basquete vôlei xadrez
+cartas dado tabuleiro brinquedo boneca pipa balão castelo rei rainha príncipe princesa dragão
+fada bruxa mágico tesouro pirata ilha deserto selva caverna vulcão neve gelo calor frio quente
+doce salgado amargo azedo feliz triste bravo calmo rápido lento grande pequeno alto baixo forte
+fraco novo velho bonito feio limpo sujo cheio vazio claro escuro branco preto vermelho azul
+verde amarelo roxo rosa cinza marrom dourado prata cobre leão tigre macaco elefante girafa
+zebra cavalo vaca porco galinha pato coelho rato cobra sapo peixe tubarão baleia golfinho polvo
+abelha formiga borboleta aranha coruja papagaio pinguim urso lobo raposa tartaruga jacaré
+camelo canguru panda abacate ameixa amora caju cereja coco figo goiaba kiwi manga maracujá
+mamão pera pêssego tangerina framboesa acerola jabuticaba pitanga caqui brócolis couve repolho
+pepino abobrinha berinjela beterraba cebola alho pimentão milho ervilha lentilha mandioca
+inhame quiabo chuchu rabanete espinafre carne frango ovo manteiga iogurte farinha açúcar sal
+pimenta azeite vinagre macarrão lasanha sopa salada sanduíche torrada biscoito bolacha pudim
+brigadeiro pipoca panqueca tapioca cuscuz feijoada churrasco omelete geleia mel canela cravo
+xícara copo prato garfo faca colher panela frigideira chaleira bandeja tigela jarra garrafa
+forno fogão geladeira pia toalha guardanapo sofá poltrona tapete cortina almofada travesseiro
+cobertor lençol colchão cama armário gaveta estante espelho quadro abajur lâmpada ventilador
+escada telhado parede chão varanda quintal garagem porão sótão corredor cozinha banheiro quarto
+sala chuveiro sabonete xampu escova pente secador tesoura agulha linha botão zíper camiseta
+bermuda saia blusa jaqueta casaco suéter meia cueca pijama gravata cinto luva cachecol boné
+bota sandália chinelo pulseira brinco cabeça cabelo testa olho nariz boca dente língua orelha
+pescoço ombro braço cotovelo mão dedo unha peito barriga costas perna joelho tornozelo coração
+pulmão osso sangue pele dentista enfermeiro advogado engenheiro arquiteto programador
+jornalista fotógrafo motorista piloto carteiro padeiro açougueiro garçom vendedor cientista
+astronauta veterinário fazendeiro pescador carpinteiro eletricista encanador jardineiro
+bailarino músico ator atriz palhaço mamãe papai vovó tio tia primo prima neto neta sobrinho
+marido esposa noivo noiva vizinho colega burro ovelha cabra galo peru ganso pombo pardal águia
+falcão gavião tucano arara andorinha corvo cisne flamingo avestruz hamster esquilo castor coala
+preguiça tatu onça leopardo hipopótamo rinoceronte gorila chimpanzé morcego lagarto camaleão
+iguana crocodilo sardinha atum salmão camarão lagosta caranguejo lula ostra mexilhão medusa
+foca morsa lontra mosquito mosca barata grilo gafanhoto joaninha minhoca lesma caracol vespa
+besouro libélula escorpião tulipa girassol margarida orquídea violeta cacto palmeira coqueiro
+pinheiro bambu grama musgo semente raiz galho tronco espinho fruta cometa galáxia universo céu
+trovão relâmpago neblina geada orvalho granizo tempestade furacão tornado terremoto colina vale
+planície lago lagoa riacho cachoeira mar areia onda pedra rocha cristal ouro ferro diamante
+bairro vila aldeia capital país estado rodovia calçada esquina semáforo túnel viaduto fonte
+estátua monumento palácio torre farol faculdade biblioteca livraria padaria açougue feira loja
+shopping restaurante lanchonete cafeteria hotel pousada clínica correio delegacia prefeitura
+aeroporto rodoviária estação porto estádio ginásio piscina academia zoológico circo patinete
+skate van táxi metrô bonde helicóptero barco canoa jangada submarino trator ambulância tablet
+câmera fone microfone impressora controle bateria tomada cabo antena rádio televisão internet
+aplicativo senha mensagem vídeo foto filme série borracha régua apostila agenda estojo cola
+grampo clipe envelope carta selo cartão bilhete jornal revista dicionário mapa globo raquete
+rede apito trave quadra campo pista salto ciclismo surfe judô boxe dama dominó baralho peteca
+bolinha carrinho pião ioiô bambolê violão guitarra piano flauta violino sanfona tambor pandeiro
+trompete saxofone harpa cavaquinho berimbau amor amizade alegria tristeza saudade medo coragem
+raiva calma paz esperança desejo vontade paciência orgulho vergonha ciúme carinho abraço beijo
+sorriso lágrima risada manhã tarde noite madrugada hoje ontem amanhã agora sempre nunca cedo
+depois antes século década feriado aniversário natal carnaval páscoa férias terça quarta quinta
+sexta sábado janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro
+dezembro correr andar pular nadar voar cantar dançar pintar desenhar escrever ler estudar
+brincar jogar viajar dormir acordar comer beber cozinhar lavar limpar arrumar comprar vender
+ganhar perder abrir fechar subir descer entrar sair falar ouvir olhar pensar sorrir chorar
+gritar sussurrar esconder procurar encontrar esquecer lembrar ensinar aprender ajudar trabalhar
+descansar gordo magro jovem rico pobre macio duro liso áspero leve pesado largo estreito curto
+comprido fácil difícil barato caro perto longe prateado bege lilás turquesa caixa pacote sacola
+cesta balde vassoura rodo esponja sabão chave cadeado corrente martelo prego parafuso serrote
+alicate fita barbante corda tijolo cimento madeira vidro plástico papel papelão metal tecido
+couro algodão seda âncora bússola espada escudo coroa trono mago gigante duende sereia
+unicórnio fantasma vampiro zumbi monstro robô alienígena herói vilão cavaleiro guerreiro ninja
 `.trim().split(/\s+/);
 
 // e = emoji mostrado, a = respostas aceitas
@@ -108,12 +157,23 @@ caro:barato cedo:tarde perto:longe dentro:fora sim:não bom:mau bom:ruim certo:e
 verdade:mentira amor:ódio guerra:paz vida:morte molhado:seco duro:mole pesado:leve
 largo:estreito grosso:fino mais:menos muito:pouco sempre:nunca tudo:nada antes:depois
 ontem:amanhã frente:trás esquerda:direita norte:sul leste:oeste branco:preto rir:chorar
-dormir:acordar ligar:desligar alegre:triste jovem:velho jovem:idoso homem:mulher
-menino:menina rei:rainha verão:inverno acima:abaixo lembrar:esquecer puxar:empurrar
-doce:amargo doce:salgado cheio:vazio liso:áspero calmo:nervoso feliz:infeliz igual:diferente
-fácil:difícil curto:comprido curto:longo alto:baixo raso:fundo raso:profundo bem:mal
-amigo:inimigo herói:vilão positivo:negativo aceitar:recusar abrir:fechar acender:apagar
-chegar:partir encher:esvaziar vencer:perder ataque:defesa pergunta:resposta
+dormir:acordar ligar:desligar alegre:triste jovem:velho jovem:idoso homem:mulher menino:menina
+rei:rainha verão:inverno acima:abaixo lembrar:esquecer puxar:empurrar doce:amargo doce:salgado
+liso:áspero calmo:nervoso feliz:infeliz igual:diferente fácil:difícil curto:comprido
+curto:longo raso:fundo raso:profundo bem:mal amigo:inimigo herói:vilão positivo:negativo
+aceitar:recusar abrir:fechar acender:apagar chegar:partir encher:esvaziar vencer:perder
+ataque:defesa pergunta:resposta vivo:morto ligado:desligado aceso:apagado seguro:perigoso
+gentil:grosseiro corajoso:medroso honesto:desonesto possível:impossível legal:ilegal
+útil:inútil justo:injusto conhecido:desconhecido sorte:azar luz:escuridão início:fim
+entrada:saída ida:volta chegada:partida nascer:morrer dar:receber perguntar:responder
+atacar:defender construir:destruir juntar:separar unir:separar somar:subtrair
+multiplicar:dividir aumentar:diminuir avançar:recuar amar:odiar sentar:levantar deitar:levantar
+cru:cozido maior:menor melhor:pior interno:externo superior:inferior máximo:mínimo
+público:privado natural:artificial verdadeiro:falso presente:ausente rápido:devagar
+barulho:silêncio barulhento:silencioso doente:saudável sucesso:fracasso subida:descida pai:mãe
+avô:avó tio:tia irmão:irmã masculino:feminino príncipe:princesa ator:atriz alguém:ninguém
+algo:nada aqui:lá antigo:moderno simples:complicado raro:comum careca:cabeludo
+vencedor:perdedor lembrança:esquecimento manhã:noite acordado:dormindo trabalho:descanso
 `.trim().split(/\s+/).map((p) => p.split(':'));
 
 const OPPOSITES = (() => {
