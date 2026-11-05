@@ -404,6 +404,8 @@ button .ph { margin: 0 0.05em; }
   border-radius: 0.25em;
   box-shadow: 0 0.09em 0 var(--card-edge), 0 0.16em 0.22em rgba(59, 37, 36, 0.2);
 }
+.player-card .unit { margin-top: 0.35rem; font-size: 0.85rem; font-weight: 700; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.player-card .unit:empty { display: none; }
 .player-card.offline { opacity: 0.45; }
 .player-card.bump .sc { animation: bump 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
 .player-card .badges { position: absolute; top: 0.6rem; right: 0.8rem; font-size: 1.4rem; }
@@ -488,6 +490,12 @@ button .ph { margin: 0 0.05em; }
 .board-row .gain { color: var(--p3); font-size: 0.9rem; }
 .board-row .sc { font-size: 1.3rem; font-variant-numeric: tabular-nums; min-width: 2.2em; text-align: right; }
 .board-row.bump .sc { animation: bump 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.board-row { position: relative; will-change: transform; }
+.board-row.up { animation: rowUp 1s ease-out; }
+@keyframes rowUp {
+  0%, 35% { box-shadow: 0 0 0 3px var(--p4), 0 10px 20px rgba(59, 37, 36, 0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(228, 131, 98, 0); }
+}
 .pts-chip { display: inline-flex; align-items: center; gap: 0.1em; margin-left: 0.2em; padding: 0 0.45em; border-radius: 999px; background: var(--p2); color: var(--p6); font-size: 0.85em; font-weight: 700; }
 .pts-chip.fast { background: var(--p4); color: var(--ink); }
 .mode-pts { font-size: 0.8rem; font-weight: 700; color: var(--ink-muted); }
@@ -498,80 +506,19 @@ button .ph { margin: 0 0.05em; }
 .auto-track > div { height: 100%; width: 0; background: var(--p4); }
 .auto-track.paused > div { background: var(--p2); }
 
-/* resultados */
-.podium { display: flex; justify-content: center; align-items: flex-end; gap: 1rem; margin: 0.5rem 0 2rem; }
-.podium .step {
-  width: 190px;
-  text-align: center;
-  color: var(--ink);
-  background: var(--p6);
-  border-radius: 26px 26px 10px 10px;
-  padding: 1rem 0.5rem;
-  box-shadow: 0 8px 0 var(--p5), 0 14px 30px rgba(59, 37, 36, 0.3);
-  animation: rise 0.7s cubic-bezier(0.3, 1.4, 0.5, 1) both;
-}
-.podium .step .medal { display: flex; flex-direction: column; align-items: center; color: var(--p1); font-weight: 700; }
-.podium .step .medal .ph { width: 2.6rem; height: 2.6rem; }
-.podium-av { line-height: 0; margin: 0.3rem 0; }
-.podium-av .avatar { width: 84px; height: 84px; border-radius: 24px; border: 3px solid var(--p6); box-shadow: 0 4px 0 rgba(59, 37, 36, 0.2); }
-.podium .step .n { font-weight: 700; font-size: 1.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.podium .step .s { font-weight: 700; font-size: 2.2rem; }
-.podium .p1 { min-height: 320px; background: var(--p5); box-shadow: 0 8px 0 var(--p3), 0 14px 30px rgba(59, 37, 36, 0.3); animation-delay: 0.35s; }
-.podium .p2 { min-height: 270px; animation-delay: 0.15s; }
-.podium .p3 { min-height: 230px; background: var(--p4); box-shadow: 0 8px 0 var(--p2), 0 14px 30px rgba(59, 37, 36, 0.3); }
-
-.results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem; }
-.leader-row {
-  display: grid;
-  grid-template-columns: 2.2rem 1fr auto;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.8rem;
-  font-size: 1.25rem;
-}
-.leader-row .pos {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  background: var(--card-2);
-  font-weight: 700;
-  color: var(--ink-muted);
-}
-.leader-row .name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.leader-row .score { font-weight: 700; color: var(--accent-dark); font-variant-numeric: tabular-nums; font-size: 1.5rem; }
-.leader-row .bar { grid-column: 2 / 4; height: 10px; border-radius: 999px; background: var(--card-2); overflow: hidden; }
-.leader-row .bar div { height: 100%; background: var(--p4); border-radius: 999px; transition: width 0.4s; }
-.leader-row.offline { opacity: 0.5; }
-
-.award {
-  background: var(--card-2);
-  border-radius: 16px;
-  padding: 0.8rem 1rem;
-  margin-bottom: 0.6rem;
-  font-size: 1.15rem;
-  line-height: 1.5;
-  animation: fadeUp 0.4s ease-out both;
-}
-.award.record { background: var(--p5); box-shadow: 0 4px 0 var(--p4); }
+/* classificação final (a tela da revisão vira o resultado) */
 .who { font-weight: 700; white-space: nowrap; }
-
-.hall { margin-top: 1.6rem; }
-.hall-grid { display: grid; grid-template-columns: minmax(300px, 1fr) 2fr; gap: 1.6rem; }
-.last-winner { display: flex; align-items: center; gap: 1rem; background: var(--p5); border-radius: 20px; padding: 0.8rem 1rem; }
-.lw-av { line-height: 0; }
-.lw-av .avatar { width: 72px; height: 72px; border-radius: 20px; border: 3px solid var(--p6); }
-.lw-name { font-size: 1.8rem; font-weight: 700; }
-.table-wrap { overflow-x: auto; }
-.stats-table { width: 100%; border-collapse: separate; border-spacing: 0 6px; font-size: 1.05rem; }
-.stats-table th { text-align: left; color: var(--ink-muted); font-weight: 600; padding: 0.2rem 0.6rem; white-space: nowrap; font-size: 0.85rem; }
-.stats-table td { padding: 0.55rem 0.6rem; background: var(--card-2); white-space: nowrap; }
-.stats-table td:first-child { border-radius: 12px 0 0 12px; }
-.stats-table td:last-child { border-radius: 0 12px 12px 0; }
-.stats-table .pos { color: var(--ink-muted); font-weight: 700; }
-.stats-table .nmcell { font-weight: 700; }
-.hist { padding: 0.4rem 0; font-size: 1.05rem; border-bottom: 2px dashed var(--card-2); }
+.review-card.final { justify-content: center; }
+.review-card.final > .tag,
+.review-card.final .review-display,
+.review-card.final .review-answer,
+.review-card.final .review-who { display: none; }
+.review-final { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin: auto 0; animation: pop 0.55s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.final-trophy .ph { width: 4.5rem; height: 4.5rem; color: var(--p4); }
+.final-winner { line-height: 0; }
+.final-winner .avatar { width: 150px; height: 150px; border-radius: 40px; border: 5px solid var(--p5); box-shadow: 0 8px 0 rgba(59, 37, 36, 0.25); }
+.final-name { font-size: 2.8rem; font-weight: 700; margin-top: 0.4rem; }
+.final-score { font-size: 1.3rem; font-weight: 600; color: var(--ink-muted); }
 
 /* =====================================================================
    CELULAR (JOGADOR)
@@ -685,7 +632,6 @@ body.in-game .play {
 }
 
 @media (max-width: 900px) {
-  .results-grid, .hall-grid { grid-template-columns: 1fr; }
   .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .review-body { grid-template-columns: 1fr; }
   .lobby-stage { display: flex; flex-wrap: wrap; justify-content: center; height: auto; min-height: 0; }

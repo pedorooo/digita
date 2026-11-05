@@ -1,4 +1,4 @@
-const socket = io();
+const socket = Net.socket();
 const $ = (id) => document.getElementById(id);
 
 // se o servidor reiniciou com código novo, recarrega a página para não ficar com a versão antiga
@@ -102,10 +102,20 @@ function fitWord() {
   el.style.fontSize = `${lo}px`;
 }
 
+// cada sala tem o próprio WebSocket: conecta no da sala pedida e entra quando abrir
+let pendingJoin = null;
 function join(code, name, playerId, avatar = myAvatar) {
-  socket.emit('player:join', { code, name, avatar, playerId }, (res) => {
+  pendingJoin = { code, name, avatar, playerId };
+  if (socket.room === code && socket.connected) sendJoin();
+  else socket.connect(code); // o 'connect' chama sendJoin()
+}
+
+function sendJoin() {
+  socket.emit('player:join', pendingJoin, (res) => {
     if (res.error) {
       joined = false;
+      pendingJoin = null;
+      socket.disconnect();
       show('joinScreen');
       $('joinError').textContent = res.error;
     }
@@ -126,9 +136,11 @@ $('joinScreen').addEventListener('submit', (e) => {
 // reconexão automática (refresh da página ou queda de rede)
 socket.on('connect', () => {
   const s = JSON.parse(localStorage.getItem(STORE) || 'null');
-  if (joined && s) join(s.code, s.name, s.playerId, s.avatar);
-  else if (!joined && s && urlCode && s.code === urlCode.toUpperCase()) join(s.code, s.name, s.playerId, s.avatar);
+  // já dentro da sala: volta com a identidade salva (mesmo playerId, mantém a pontuação)
+  if (joined && s && s.code === socket.room) pendingJoin = { code: s.code, name: s.name, avatar: s.avatar, playerId: s.playerId };
+  if (pendingJoin) sendJoin();
 });
+if (saved && urlCode && saved.code === urlCode.toUpperCase()) join(saved.code, saved.name, saved.playerId, saved.avatar);
 
 socket.on('joined', ({ code, playerId, name, avatar, state, stats, isLastWinner }) => {
   const html = statsHtml(stats);
@@ -277,12 +289,16 @@ socket.on('round:results', ({ ranking, me, awards, newRecords }) => {
 
 socket.on('room:closed', () => {
   joined = false;
+  pendingJoin = null;
+  socket.disconnect();
   localStorage.removeItem(STORE);
   $('closedMsg').textContent = 'A sala foi fechada.';
   show('closedScreen');
 });
 socket.on('kicked', () => {
   joined = false;
+  pendingJoin = null;
+  socket.disconnect();
   localStorage.removeItem(STORE);
   $('closedMsg').textContent = 'Você foi removido da sala.';
   show('closedScreen');

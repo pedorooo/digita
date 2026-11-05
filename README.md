@@ -10,23 +10,24 @@ Everyone gets the **same stack of words**:
 - **oposto** (opposite): type the antonym (`quente` → `frio`)
 - **número** (number): write the number out in words (`47` → `quarenta e sete`)
 
-Accents, spaces and hyphens are optional. Whoever gets the most words right before time runs out wins.
+Accents, spaces and hyphens are optional. Each mode is worth points (normal 1, ao contrário/emoji/oposto 2, número/cor da tinta 3) and answering in under 1 second gives ×1.25. At the end, the words are reviewed one by one with a live scoreboard; that review screen is the final ranking.
 
 ## Running
 
+It runs on Cloudflare Workers. Each room is a Durable Object (`src/room.js`), and the Worker (`src/worker.js`) serves the files from `public/` and creates rooms. `npm run build` generates `dist/` (public files, icon sprite, avatars and fonts). `wrangler` runs it automatically.
+
 ```bash
 npm install
-npm start
+npm run dev      # local: http://localhost:8787
+npm run deploy   # publishes to Cloudflare (run `npx wrangler login` once first)
 ```
 
-Open `http://localhost:3000` on the main screen (TV or projector). Phones need to be on the **same Wi-Fi network** to scan the QR code.
+**Test room:** open the main screen with `?teste` (e.g. `http://localhost:8787/?teste`) and 5 automatic players (Ana, Bia, Caio, Duda, Enzo) join the room and play by themselves, each with a different speed and accuracy. `?teste=3` adds only 3. Real phones can join the same room too.
 
-- If the QR shows the wrong IP, or you're behind a proxy or tunnel: `PUBLIC_URL=http://192.168.0.10:3000 npm start`
-- Different port: `PORT=8080 npm start`
-- If phones can't connect, open port 3000 in the firewall (e.g. `sudo ufw allow 3000`).
+To test on phones over the local network: `npx wrangler dev --ip 0.0.0.0`, then open `http://<your-ip>:8787` on the main screen. The QR code uses the address the main screen was opened with.
 
 ## Credits
 
-- Avatars: [DiceBear](https://www.dicebear.com), "Thumbs" style (MIT license), generated locally by the server at `/avatar/<id>.svg` and colored with the game's palette.
+- Avatars: [DiceBear](https://www.dicebear.com), "Thumbs" style (MIT license), generated at build time as `/avatar/<id>.svg` and colored with the game's palette.
 - Icons: [Phosphor Icons](https://phosphoricons.com), Fill style (MIT license), from `@phosphor-icons/core`, served as a sprite at `/icons.svg`.
 - Font: [Fredoka](https://fonts.google.com/specimen/Fredoka) (SIL Open Font License), served from `@fontsource/fredoka`.

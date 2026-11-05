@@ -1,5 +1,5 @@
 // Estatísticas que duram enquanto a sala existir: vitórias, sequências, recordes, histórico.
-const { normalize } = require('./words');
+import { normalize } from './words.js';
 
 function createStats() {
   return {
@@ -149,4 +149,4 @@ function statsFor(stats, name) {
   return stats.players.get(keyOf(name)) || null;
 }
 
-module.exports = { createStats, applyRound, publicStats, statsFor, playerStats };
+export { createStats, applyRound, publicStats, statsFor, playerStats };

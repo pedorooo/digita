@@ -269,4 +269,4 @@ function isCorrect(entry, text) {
   return t.length > 0 && entry.answers.some((a) => compact(a) === t);
 }
 
-module.exports = { buildStack, isCorrect, normalize, numberToWords, MODES };
+export { buildStack, isCorrect, normalize, numberToWords, MODES };

@@ -1,4 +1,4 @@
-const socket = io();
+const socket = Net.socket();
 const $ = (id) => document.getElementById(id);
 
 // se o servidor reiniciou com código novo, recarrega a página para não ficar com a versão antiga
@@ -16,8 +16,8 @@ let countdownInterval = null;
 
 // revisão palavra por palavra (controlada aqui na tela principal)
 let reviewStep = -1; // -1 = não está revisando
-let reviewFromResults = false; // revendo depois de já ter mostrado o placar
 let reviewShown = false; // a resposta da palavra atual já foi revelada?
+let reviewFinal = false; // terminou: a tela da revisão vira a classificação final
 
 // revisão automática (padrão): mostra a palavra, revela a resposta e passa para a próxima sozinha
 const AUTO_WORD_MS = 2200; // tempo com a resposta escondida
@@ -27,7 +27,12 @@ let autoTimer = null;
 let autoKey = null;
 
 const TYPE_LABEL = { normal: 'normal', reversed: 'ao contrário', emoji: 'emoji', color: 'cor da tinta', opposite: 'oposto', number: 'número' };
-const SECTIONS = ['lobby', 'countdown', 'game', 'ended', 'review', 'results', 'connecting'];
+const SECTIONS = ['lobby', 'countdown', 'game', 'ended', 'review', 'connecting'];
+
+// sala de teste: abra a tela principal com ?teste (ou ?teste=3) para entrar com jogadores que jogam sozinhos
+const TEST_BOTS = new URLSearchParams(location.search).has('teste')
+  ? Math.min(5, Math.max(1, Number(new URLSearchParams(location.search).get('teste')) || 5))
+  : 0;
 
 function show(id) {
   for (const s of SECTIONS) $(s).classList.toggle('hidden', s !== id);
@@ -43,18 +48,49 @@ const pts = (n) => (Math.round((n || 0) * 100) / 100).toLocaleString('pt-BR', { 
 const who = (p) => `<span class="who">${Avatar.img(p.avatar)} ${esc(p.name)}</span>`;
 
 // ---------- criação / reconexão da sala ----------
-function createRoom() {
+// 1) pede a sala ao servidor (retoma a salva nesta aba, se ainda existir; senão cria outra)
+// 2) conecta no WebSocket da sala e assume o papel de host
+let hostToken = null;
+let createRetry = 0;
+async function createRoom() {
   const saved = JSON.parse(sessionStorage.getItem('digita-host') || 'null');
-  socket.emit('host:create', saved || {}, (res) => {
-    sessionStorage.setItem('digita-host', JSON.stringify({ code: res.code, hostToken: res.hostToken }));
-    $('qr').src = res.qr;
-    $('code').innerHTML = Tiles.html(res.code);
-    $('joinUrl').textContent = res.joinUrl;
-    $('headerCodeText').innerHTML = Tiles.html(res.code, { animate: false });
-    $('headerCode').classList.remove('hidden');
-  });
+  let res;
+  try {
+    const r = await fetch('/api/rooms', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(saved || {}),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    res = await r.json();
+  } catch (err) {
+    console.error('não foi possível criar a sala', err);
+    setTimeout(createRoom, Math.min(5000, 500 * 2 ** createRetry++));
+    return;
+  }
+  createRetry = 0;
+  hostToken = res.hostToken;
+  sessionStorage.setItem('digita-host', JSON.stringify({ code: res.code, hostToken: res.hostToken }));
+  $('qr').src = res.qr;
+  $('code').innerHTML = Tiles.html(res.code);
+  $('joinUrl').textContent = res.joinUrl;
+  $('headerCodeText').innerHTML = Tiles.html(res.code, { animate: false });
+  $('headerCode').classList.remove('hidden');
+  if (socket.room !== res.code || !socket.connected) socket.connect(res.code);
 }
-socket.on('connect', createRoom);
+socket.on('connect', () => {
+  socket.emit('host:claim', { hostToken }, (res) => {
+    // a sala fechou enquanto estávamos fora: cria outra
+    if (res.error) return createRoom();
+    // sala de teste: adiciona os jogadores automáticos uma única vez por sala
+    const key = `digita-bots-${socket.room}`;
+    if (TEST_BOTS && !sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, '1');
+      socket.emit('host:addBots', { n: TEST_BOTS });
+    }
+  });
+});
+createRoom();
 
 // ---------- controles ----------
 $('durations').addEventListener('click', (e) => {
@@ -140,7 +176,7 @@ $('chips').addEventListener('click', (e) => {
 
 $('revealBtn').onclick = () => {
   if (!lastBoard?.feed.length) return socket.emit('host:reveal');
-  reviewFromResults = false;
+  reviewFinal = false;
   reviewStep = 0;
   reviewShown = false;
   autoPlay = true;
@@ -148,7 +184,7 @@ $('revealBtn').onclick = () => {
   renderReview(true);
 };
 $('reviewAgainBtn').onclick = () => {
-  reviewFromResults = true;
+  reviewFinal = false;
   reviewStep = 0;
   reviewShown = false;
   autoPlay = true;
@@ -226,12 +262,40 @@ function scheduleAuto() {
   autoTimer = setTimeout(nextWord, ms);
 }
 
+// fim da revisão: a própria tela vira a classificação final
 function finishReview() {
   clearTimeout(autoTimer);
   autoKey = null;
-  reviewStep = -1;
-  if (reviewFromResults || lastBoard?.revealed) show('results');
-  else socket.emit('host:reveal'); // avisa os celulares e mostra o placar final
+  reviewFinal = true;
+  reviewStep = Math.max(0, (lastBoard?.feed.length || 1) - 1);
+  reviewShown = true;
+  renderFinal();
+  if (!lastBoard?.revealed) socket.emit('host:reveal'); // avisa os celulares
+}
+
+function renderFinal() {
+  show('review');
+  const b = lastBoard;
+  const top = b.players[0];
+  $('reviewCount').textContent = 'Fim de jogo';
+  $('reviewBar').style.width = '100%';
+  const card = $('reviewCard');
+  card.classList.add('final');
+  card.classList.remove('revealed');
+  $('reviewFinal').classList.remove('hidden');
+  $('reviewFinal').innerHTML =
+    top && top.score > 0
+      ? `<div class="final-trophy">${Icon('trophy')}</div>
+         <div class="final-winner">${Avatar.img(top.avatar)}</div>
+         <div class="final-name">${esc(top.name)} venceu!</div>
+         <div class="final-score">${pts(top.score)} pontos · ${plural(top.words, 'palavra', 'palavras')}</div>`
+      : `<div class="final-trophy">${Icon('smiley-x-eyes')}</div><div class="final-name">Ninguém pontuou</div>`;
+  for (const id of ['autoBtn', 'prevBtn', 'nextBtn', 'skipReviewBtn', 'reviewHint']) $(id).classList.add('hidden');
+  $('againBtn').classList.remove('hidden');
+  $('reviewAgainBtn').classList.toggle('hidden', !b.feed.length);
+  clearTimeout(autoTimer);
+  $('autoTrack').classList.add('hidden');
+  renderReviewBoard();
 }
 
 // ---------- render ----------
@@ -320,17 +384,20 @@ function renderLobby(b) {
   for (const box of [...wrap.children]) if (!seen.has(box.dataset.id)) box.remove();
 }
 
-// Cartões dos jogadores: avatar, nome e acertos. Mantém os elementos para animar o "+1".
+// Cartões dos jogadores: avatar, nome e PALAVRAS certas (os pontos só aparecem na revisão).
+// Mantém os elementos para animar o "+1".
 function renderPlayerGrid(el, players, { showScore }) {
   const seen = new Set();
-  players.forEach((p, i) => {
+  // ordem por palavras certas (ordenar por pontos entregaria a pontuação)
+  const list = showScore ? [...players].sort((a, b) => b.words - a.words || a.name.localeCompare(b.name)) : players;
+  list.forEach((p, i) => {
     seen.add(p.id);
     let card = el.querySelector(`[data-id="${p.id}"]`);
     if (!card) {
       card = document.createElement('div');
       card.className = 'player-card';
       card.dataset.id = p.id;
-      card.innerHTML = `<div class="badges"></div><div class="av"></div><div class="nm"></div><div class="sc"></div>`;
+      card.innerHTML = `<div class="badges"></div><div class="av"></div><div class="nm"></div><div class="sc"></div><div class="unit"></div>`;
       el.append(card);
     }
     card.querySelector('.badges').innerHTML = badges(p);
@@ -342,7 +409,8 @@ function renderPlayerGrid(el, players, { showScore }) {
     card.querySelector('.nm').textContent = p.name;
     card.classList.toggle('offline', !p.online);
     const sc = card.querySelector('.sc');
-    const text = showScore ? pts(p.score) : '?';
+    const text = showScore ? String(p.words) : '?';
+    card.querySelector('.unit').textContent = showScore ? (p.words === 1 ? 'palavra' : 'palavras') : '';
     if (sc.textContent !== text) {
       if (showScore && sc.textContent !== '') {
         card.classList.remove('bump');
@@ -356,22 +424,14 @@ function renderPlayerGrid(el, players, { showScore }) {
   for (const card of [...el.children]) if (!seen.has(card.dataset.id)) card.remove();
 }
 
-function leaderRows(players) {
-  const best = Math.max(1, ...players.map((p) => p.score));
-  return players
-    .map(
-      (p, i) => `
-      <div class="leader-row ${p.online ? '' : 'offline'}">
-        <span class="pos">${i + 1}</span>
-        <span class="name">${Avatar.img(p.avatar)} ${esc(p.name)} ${badges(p)}</span>
-        <span class="score">${pts(p.score)}</span>
-        <div class="bar"><div style="width:${(p.score / best) * 100}%"></div></div>
-      </div>`,
-    )
-    .join('');
-}
-
 function renderReview(newWord = false) {
+  if (reviewFinal) return renderFinal();
+  $('reviewCard').classList.remove('final');
+  $('reviewFinal').classList.add('hidden');
+  $('autoTrack').classList.remove('hidden');
+  for (const id of ['autoBtn', 'prevBtn', 'nextBtn', 'skipReviewBtn', 'reviewHint']) $(id).classList.remove('hidden');
+  $('againBtn').classList.add('hidden');
+  $('reviewAgainBtn').classList.add('hidden');
   const feed = lastBoard.feed;
   const f = feed[reviewStep];
   show('review');
@@ -430,9 +490,9 @@ function renderReview(newWord = false) {
 // Placar que vai somando durante a revisão: conta as palavras já reveladas
 function renderReviewBoard() {
   const feed = lastBoard.feed;
-  const totals = new Map(lastBoard.players.map((p) => [p.id, 0]));
+  const totals = new Map(lastBoard.players.map((p) => [p.id, reviewFinal ? p.score : 0]));
   const gained = new Map();
-  for (let i = 0; i <= reviewStep && i < feed.length; i++) {
+  for (let i = 0; !reviewFinal && i <= reviewStep && i < feed.length; i++) {
     if (i === reviewStep && !reviewShown) break;
     for (const s of feed[i].solved) {
       totals.set(s.id, (totals.get(s.id) || 0) + s.pts);
@@ -441,6 +501,8 @@ function renderReviewBoard() {
   }
   const order = [...lastBoard.players].sort((a, b) => totals.get(b.id) - totals.get(a.id) || a.name.localeCompare(b.name));
   const el = $('reviewBoard');
+  // FLIP: guarda onde cada linha estava para animar a troca de posição
+  const before = new Map([...el.children].map((r) => [r.dataset.id, { top: r.getBoundingClientRect().top, pos: Number(r.dataset.pos) }]));
   const seen = new Set();
   order.forEach((p, i) => {
     seen.add(p.id);
@@ -453,6 +515,7 @@ function renderReviewBoard() {
       el.append(row);
     }
     row.style.order = i;
+    row.dataset.pos = i;
     row.classList.toggle('lead', i === 0 && totals.get(p.id) > 0);
     row.querySelector('.pos').textContent = i + 1;
     const sc = row.querySelector('.sc');
@@ -469,118 +532,26 @@ function renderReviewBoard() {
     row.querySelector('.gain').textContent = g ? `+${pts(g)}` : '';
   });
   for (const row of [...el.children]) if (!seen.has(row.dataset.id)) row.remove();
-}
 
-const RECORD_TEXT = {
-  bestScore: (r) => `${Icon('trophy')} Mais pontos numa rodada: ${who(r)} com <b>${pts(r.value)}</b> <span class="muted">(${r.duration}s)</span>`,
-  fastest: (r) => `${Icon('lightning')} Palavra mais rápida: ${who(r)} em <b>${secs(r.ms)}</b> <span class="muted">(${esc(r.word)})</span>`,
-  bestCombo: (r) => `${Icon('fire')} Maior combo: ${who(r)} com <b>${r.value}</b> acertos seguidos`,
-  bestWinStreak: (r) => `${Icon('crown')} Mais vitórias seguidas: ${who(r)} com <b>${r.value}</b>`,
-};
-
-const AWARD_TEXT = {
-  fastest: (a) => `${Icon('lightning')} <b>Mais rápido:</b> ${who(a)} acertou <i>${esc(a.word)}</i> em ${secs(a.ms)}`,
-  combo: (a) => `${Icon('fire')} <b>Maior combo:</b> ${who(a)} acertou ${a.value} seguidas`,
-  accuracy: (a) => `${Icon('target')} <b>Mais preciso:</b> ${who(a)} com ${a.value}% de acerto`,
-  skipper: (a) => `${Icon('fast-forward')} <b>Rei do pulo:</b> ${who(a)} pulou ${plural(a.value, 'palavra', 'palavras')}`,
-  streak: (a) => `${Icon('crown')} <b>Em sequência:</b> ${who(a)} venceu ${a.value} seguidas!`,
-};
-
-function renderAwards(summary) {
-  if (!summary) return ($('awards').innerHTML = '');
-  let html = '';
-  for (const r of summary.newRecords) {
-    html += `<div class="award record">${Icon('confetti')} <b>NOVO RECORDE DA SALA!</b><br />${RECORD_TEXT[r.kind](r)}</div>`;
+  // anima quem mudou de lugar: desliza da posição antiga para a nova; quem subiu ganha destaque
+  for (const row of el.children) {
+    const old = before.get(row.dataset.id);
+    if (!old) continue;
+    const dy = old.top - row.getBoundingClientRect().top;
+    if (Math.abs(dy) < 1) continue;
+    row.style.transition = 'none';
+    row.style.transform = `translateY(${dy}px)`;
+    row.style.zIndex = Number(row.dataset.pos) < old.pos ? 2 : 1;
+    void row.offsetWidth;
+    row.style.transition = 'transform 650ms cubic-bezier(0.2, 0.9, 0.25, 1.15)';
+    row.style.transform = '';
+    if (Number(row.dataset.pos) < old.pos) {
+      row.classList.remove('up');
+      void row.offsetWidth;
+      row.classList.add('up');
+    }
+    row.addEventListener('transitionend', () => (row.style.zIndex = ''), { once: true });
   }
-  for (const a of summary.awards) html += `<div class="award">${AWARD_TEXT[a.kind](a)}</div>`;
-  if (summary.prevWinner && summary.winner && summary.prevWinner.name !== summary.winner.name) {
-    html += `<div class="award">${Icon('swap')} ${who(summary.winner)} tirou a coroa de ${who(summary.prevWinner)}!</div>`;
-  }
-  $('awards').innerHTML = html || '<p class="muted">Nada de especial nesta rodada.</p>';
-}
-
-function renderHall(el, stats) {
-  if (!stats || stats.round === 0) {
-    el.classList.add('hidden');
-    return;
-  }
-  el.classList.remove('hidden');
-  const r = stats.records;
-  const records = Object.keys(RECORD_TEXT)
-    .filter((k) => r[k])
-    .map((k) => `<div class="award">${RECORD_TEXT[k](r[k])}</div>`)
-    .join('');
-  const rows = stats.players
-    .map(
-      (s, i) => `<tr>
-        <td class="pos">${i + 1}</td>
-        <td class="nmcell">${Avatar.img(s.avatar)} ${esc(s.name)}</td>
-        <td><b>${s.wins}</b></td>
-        <td>${s.winStreak ? `${Icon('fire')}${s.winStreak}` : '–'}</td>
-        <td>${s.bestWinStreak || '–'}</td>
-        <td>${pts(s.bestScore)}</td>
-        <td>${s.bestCombo || '–'}</td>
-        <td>${s.fastestMs != null ? secs(s.fastestMs) : '–'}</td>
-        <td><b>${pts(s.totalPoints)}</b></td>
-        <td>${s.totalWords}</td>
-        <td>${s.rounds}</td>
-      </tr>`,
-    )
-    .join('');
-  const history = stats.history
-    .map(
-      (h) =>
-        `<div class="hist">Rodada ${h.round} <span class="muted">(${h.duration}s)</span> — ${
-          h.winner ? `${who(h.winner)} <b>${pts(h.winner.score)} pts</b>` : '<span class="muted">sem vencedor</span>'
-        }</div>`,
-    )
-    .join('');
-
-  el.innerHTML = `
-    <div class="hall-grid">
-      <div class="panel">
-        <h2>${Icon('crown')} Último vencedor</h2>
-        ${
-          stats.lastWinner
-            ? `<div class="last-winner"><div class="lw-av">${Avatar.img(stats.lastWinner.avatar)}</div><div><div class="lw-name">${esc(stats.lastWinner.name)}</div><div class="muted">${pts(stats.lastWinner.score)} pontos · rodada ${stats.lastWinner.round}</div></div></div>`
-            : '<p class="muted">Ninguém ainda.</p>'
-        }
-        <h2 style="margin-top:1.5rem">Recordes da sala</h2>
-        ${records || '<p class="muted">Nenhum recorde ainda.</p>'}
-      </div>
-      <div class="panel">
-        <h2>Hall da fama · ${plural(stats.round, 'rodada', 'rodadas')}</h2>
-        <div class="table-wrap">
-          <table class="stats-table">
-            <thead><tr><th></th><th>Jogador</th><th>${Icon('trophy')} Vitórias</th><th>${Icon('fire')} Seq.</th><th>Melhor seq.</th><th>${Icon('star')} Recorde</th><th>Combo</th><th>${Icon('lightning')} Mais rápida</th><th>Pontos</th><th>Palavras</th><th>Partidas</th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-        <h2 style="margin-top:1.5rem">Últimas rodadas</h2>
-        ${history}
-      </div>
-    </div>`;
-}
-
-function renderResults(b) {
-  const medal = (i) => `${Icon('medal')}<span>${i + 1}º</span>`;
-  const top = b.players.slice(0, 3);
-  const order = [1, 0, 2].filter((i) => top[i]); // 2º, 1º, 3º
-  $('podium').innerHTML = order
-    .map(
-      (i) => `
-      <div class="step p${i + 1}">
-        <div class="medal">${medal(i)}</div>
-        <div class="podium-av">${Avatar.img(top[i].avatar)}</div>
-        <div class="n">${esc(top[i].name)}</div>
-        <div class="s">${pts(top[i].score)}</div>
-      </div>`,
-    )
-    .join('');
-  $('finalList').innerHTML = leaderRows(b.players);
-  $('reviewAgainBtn').classList.toggle('hidden', !b.feed.length);
-  renderAwards(b.summary);
-  renderHall($('resultsHall'), b.stats);
 }
 
 function startTimer(remainingMs) {
@@ -613,6 +584,7 @@ socket.on('board', (b) => {
   lastBoard = b;
   if (b.state !== 'ended') {
     reviewStep = -1;
+    reviewFinal = false;
     clearTimeout(autoTimer);
     autoKey = null;
   }
@@ -633,14 +605,14 @@ socket.on('board', (b) => {
     renderPlayerGrid($('playerGrid'), b.players, { showScore: true });
   } else if (b.state === 'ended') {
     clearInterval(timerInterval);
-    if (reviewStep >= 0) {
+    if (reviewFinal || (b.revealed && reviewStep < 0)) {
+      reviewFinal = true;
+      renderFinal(); // classificação final (também ao recarregar a página depois do fim)
+    } else if (reviewStep >= 0) {
       renderReview(); // atualização no meio da revisão (ex.: alguém reconectou)
-    } else if (!b.revealed) {
+    } else {
       show('ended');
       renderPlayerGrid($('endedGrid'), b.players, { showScore: false });
-    } else {
-      show('results');
-      renderResults(b);
     }
   }
 });

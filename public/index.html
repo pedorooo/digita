@@ -90,6 +90,7 @@
         <div class="review-display" id="reviewDisplay"></div>
         <div class="review-answer" id="reviewAnswer"></div>
         <div class="review-who" id="reviewWho"></div>
+        <div class="review-final hidden" id="reviewFinal"></div>
         <div class="auto-track" id="autoTrack"><div id="autoBar"></div></div>
       </div>
       <aside class="panel review-board">
@@ -101,29 +102,11 @@
         <button class="ghost" id="autoBtn"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#pause"></use></svg> Pausar</button>
         <button class="ghost" id="prevBtn"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#caret-left"></use></svg> Anterior</button>
         <button id="nextBtn" class="big-btn">Próxima <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#caret-right"></use></svg></button>
-        <button class="ghost" id="skipReviewBtn">Pular para o placar <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#skip-forward"></use></svg></button>
+        <button class="ghost" id="skipReviewBtn">Pular para o fim <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#skip-forward"></use></svg></button>
+        <button id="againBtn" class="big-btn hidden">Jogar de novo <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#arrow-clockwise"></use></svg></button>
+        <button class="ghost hidden" id="reviewAgainBtn">Rever palavras</button>
       </div>
-      <p class="muted center-text">Passa sozinho · espaço pausa/continua · setas ← → navegam</p>
-    </section>
-
-    <!-- RESULTADOS -->
-    <section id="results" class="hidden">
-      <div class="podium" id="podium"></div>
-      <div class="results-grid">
-        <div class="panel">
-          <h2>Classificação da rodada</h2>
-          <div id="finalList"></div>
-          <div class="controls">
-            <button id="againBtn">Jogar de novo <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#arrow-clockwise"></use></svg></button>
-            <button class="ghost" id="reviewAgainBtn">Rever palavras</button>
-          </div>
-        </div>
-        <div class="panel">
-          <h2>Destaques da rodada</h2>
-          <div id="awards"></div>
-        </div>
-      </div>
-      <div class="hall" id="resultsHall"></div>
+      <p class="muted center-text" id="reviewHint">Passa sozinho · espaço pausa/continua · setas ← → navegam</p>
     </section>
 
     <section id="connecting">
@@ -131,7 +114,7 @@
     </section>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/net.js"></script>
   <script src="/avatar.js"></script>
   <script src="/icons.js"></script>
   <script src="/tiles.js"></script>
