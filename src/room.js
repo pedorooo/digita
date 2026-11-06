@@ -13,10 +13,15 @@ const COUNTDOWN_MS = 3000;
 const HOST_GRACE_MS = 30000; // tempo para o host recarregar a página antes da sala fechar
 const DURATIONS = [30, 60, 90, 120];
 const MAX_PLAYERS = 30;
-// Pontuação: cada modo tem um multiplicador; acertar em menos de 1 s dá +25%
+// Pontuação (sempre inteira) = pontos do modo + bônus de rapidez
 const POINTS = { normal: 1, reversed: 2, emoji: 2, opposite: 2, number: 3, color: 3 };
-const FAST_MS = 1000;
-const FAST_BONUS = 1.25;
+// até 1,5 s: +3 · até 2,5 s: +2 · até 3,2 s: +1 · mais devagar: só os pontos do modo
+const SPEED_BONUS = [
+  [1500, 3],
+  [2500, 2],
+  [3200, 1],
+];
+const speedBonus = (ms) => (SPEED_BONUS.find(([max]) => ms < max) || [0, 0])[1];
 // códigos de fechamento: o cliente não tenta reconectar quando recebe >= 4000
 const CLOSE_REPLACED = 4000; // mesmo jogador abriu em outra aba
 const CLOSE_GONE = 4004; // a sala não existe (mais)
@@ -233,7 +238,7 @@ export class Room extends DurableObject {
           answer: e.answers.join(' / '),
           solved: log.solved
             .filter((x) => who(x.id))
-            .map((x) => ({ id: x.id, ...who(x.id), ms: x.ms, pts: x.pts, fast: x.fast }))
+            .map((x) => ({ id: x.id, ...who(x.id), ms: x.ms, pts: x.pts, bonus: x.bonus || 0 }))
             .sort((a, b) => a.ms - b.ms),
           skipped: log.skipped.map(who).filter(Boolean),
           pending: players.filter((p) => p.index === i).map((p) => ({ name: p.name, avatar: p.avatar })),
@@ -400,8 +405,8 @@ export class Room extends DurableObject {
     const entry = room.stack[p.index];
     const now = Date.now();
     const ms = now - (p.shownAt || now);
-    const fast = ms < FAST_MS;
-    const pts = round2((POINTS[entry.type] || 1) * (fast ? FAST_BONUS : 1));
+    const bonus = speedBonus(ms);
+    const pts = (POINTS[entry.type] || 1) + bonus;
     p.score = round2(p.score + pts);
     p.words++;
     p.combo++;
@@ -411,8 +416,8 @@ export class Room extends DurableObject {
       p.fastestMs = ms;
       p.fastestWord = entry.display;
     }
-    this.logWord(p.index).solved.push({ id: p.id, ms, pts, fast });
-    this.send(p.socketId, 'answer:right', { answer: entry.answers[0], pts, fast });
+    this.logWord(p.index).solved.push({ id: p.id, ms, pts, bonus });
+    this.send(p.socketId, 'answer:right', { answer: entry.answers[0], pts, bonus });
     this.advance(p);
   }
 

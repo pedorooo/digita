@@ -43,7 +43,7 @@ function esc(s) {
 }
 const secs = (ms) => `${(ms / 1000).toFixed(1).replace('.', ',')}s`;
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-// pontos podem ter decimais (bônus de rapidez ×1,25): 3,75 · 12,5 · 7
+// pontos são inteiros (modo + bônus de rapidez); o formatador também aguenta pontuações antigas
 const pts = (n) => (Math.round((n || 0) * 100) / 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 const who = (p) => `<span class="who">${Avatar.img(p.avatar)} ${esc(p.name)}</span>`;
 
@@ -91,6 +91,10 @@ socket.on('connect', () => {
   });
 });
 createRoom();
+
+// ---------- som ----------
+$('muteBtn').onclick = () => Sfx.toggle();
+Sfx.onChange((m) => ($('muteBtn').innerHTML = Icon(m ? 'speaker-slash' : 'speaker-high')));
 
 // ---------- controles ----------
 $('durations').addEventListener('click', (e) => {
@@ -219,10 +223,12 @@ function nextWord() {
   if (reviewStep < 0 || !lastBoard?.feed.length) return;
   if (!reviewShown) {
     reviewShown = true;
+    Sfx.play('reveal');
     renderReview(false);
   } else if (reviewStep < lastBoard.feed.length - 1) {
     reviewStep++;
     reviewShown = false;
+    Sfx.play('card');
     renderReview(true);
   } else {
     finishReview();
@@ -266,6 +272,7 @@ function scheduleAuto() {
 function finishReview() {
   clearTimeout(autoTimer);
   autoKey = null;
+  if (!reviewFinal) Sfx.play('win');
   reviewFinal = true;
   reviewStep = Math.max(0, (lastBoard?.feed.length || 1) - 1);
   reviewShown = true;
@@ -290,7 +297,7 @@ function renderFinal() {
          <div class="final-name">${esc(top.name)} venceu!</div>
          <div class="final-score">${pts(top.score)} pontos · ${plural(top.words, 'palavra', 'palavras')}</div>`
       : `<div class="final-trophy">${Icon('smiley-x-eyes')}</div><div class="final-name">Ninguém pontuou</div>`;
-  for (const id of ['autoBtn', 'prevBtn', 'nextBtn', 'skipReviewBtn', 'reviewHint']) $(id).classList.add('hidden');
+  for (const id of ['autoBtn', 'prevBtn', 'nextBtn', 'skipReviewBtn']) $(id).classList.add('hidden');
   $('againBtn').classList.remove('hidden');
   $('reviewAgainBtn').classList.toggle('hidden', !b.feed.length);
   clearTimeout(autoTimer);
@@ -372,6 +379,7 @@ function renderLobby(b) {
     if (!box) {
       box = document.createElement('div');
       box.className = 'slot-box';
+      Sfx.play('join');
       box.dataset.id = p.id;
       box.style.animationDelay = `0s, ${(Math.random() * 2).toFixed(2)}s`;
       wrap.append(box);
@@ -397,10 +405,10 @@ function renderPlayerGrid(el, players, { showScore }) {
       card = document.createElement('div');
       card.className = 'player-card';
       card.dataset.id = p.id;
-      card.innerHTML = `<div class="badges"></div><div class="av"></div><div class="nm"></div><div class="sc"></div><div class="unit"></div>`;
+      // sem coroa/🔥 aqui: durante o jogo e antes de revelar eles dariam a impressão de indicar o vencedor
+      card.innerHTML = `<div class="av"></div><div class="nm"></div><div class="sc"></div><div class="unit"></div>`;
       el.append(card);
     }
-    card.querySelector('.badges').innerHTML = badges(p);
     const av = card.querySelector('.av');
     if (av.dataset.id !== p.avatar) {
       av.dataset.id = p.avatar;
@@ -429,7 +437,7 @@ function renderReview(newWord = false) {
   $('reviewCard').classList.remove('final');
   $('reviewFinal').classList.add('hidden');
   $('autoTrack').classList.remove('hidden');
-  for (const id of ['autoBtn', 'prevBtn', 'nextBtn', 'skipReviewBtn', 'reviewHint']) $(id).classList.remove('hidden');
+  for (const id of ['autoBtn', 'prevBtn', 'nextBtn', 'skipReviewBtn']) $(id).classList.remove('hidden');
   $('againBtn').classList.add('hidden');
   $('reviewAgainBtn').classList.add('hidden');
   const feed = lastBoard.feed;
@@ -440,6 +448,7 @@ function renderReview(newWord = false) {
   $('reviewTag').textContent = `${TYPE_LABEL[f.type]} · ${plural(f.points, 'ponto', 'pontos')}`;
   $('reviewTag').className = `tag ${f.type}`;
   $('reviewDisplay').innerHTML = Tiles.html(f.display, { variant: f.type === 'color' ? 'dark' : '', animate: newWord });
+  fitReviewDisplay();
   $('reviewDisplay').style.color = f.type === 'color' ? f.color : '';
   $('reviewDisplay').className = `review-display ${f.type}`;
   $('reviewAnswer').innerHTML = f.type === 'normal' ? '' : `→ <b>${esc(f.answer)}</b>`;
@@ -449,7 +458,7 @@ function renderReview(newWord = false) {
     html += `<div class="who-group"><div class="who-title good">${Icon('check-circle')} Acertaram (${f.solved.length})</div>${f.solved
       .map(
         (s, i) =>
-          `<div class="who-item ${i === 0 ? 'first' : ''}">${who(s)} <span class="muted">${secs(s.ms)}</span> <span class="pts-chip ${s.fast ? 'fast' : ''}" title="${s.fast ? 'Menos de 1s: ×1,25' : ''}">+${pts(s.pts)}${s.fast ? Icon('lightning') : ''}</span></div>`,
+          `<div class="who-item ${i === 0 ? 'first' : ''}">${who(s)} <span class="muted">${secs(s.ms)}</span> <span class="pts-chip ${s.bonus ? 'fast' : ''}" title="${s.bonus ? `Rapidez: +${s.bonus}` : ''}">+${pts(s.pts)}${s.bonus ? Icon('lightning') : ''}</span></div>`,
       )
       .join('')}</div>`;
   } else {
@@ -487,6 +496,20 @@ function renderReview(newWord = false) {
   scheduleAuto();
 }
 
+// Palavras longas (ex.: 11 letras) diminuem as peças até caberem no cartão
+function fitReviewDisplay() {
+  const d = $('reviewDisplay');
+  const tiles = d.firstElementChild;
+  d.style.fontSize = '';
+  if (!tiles) return;
+  const avail = $('reviewCard').clientWidth - 64;
+  const w = tiles.offsetWidth;
+  if (w > avail) d.style.fontSize = `${(parseFloat(getComputedStyle(d).fontSize) * avail) / w}px`;
+}
+window.addEventListener('resize', () => {
+  if (!$('review').classList.contains('hidden')) fitReviewDisplay();
+});
+
 // Placar que vai somando durante a revisão: conta as palavras já reveladas
 function renderReviewBoard() {
   const feed = lastBoard.feed;
@@ -504,6 +527,8 @@ function renderReviewBoard() {
   // FLIP: guarda onde cada linha estava para animar a troca de posição
   const before = new Map([...el.children].map((r) => [r.dataset.id, { top: r.getBoundingClientRect().top, pos: Number(r.dataset.pos) }]));
   const seen = new Set();
+  let bumped = false;
+  let overtook = false;
   order.forEach((p, i) => {
     seen.add(p.id);
     let row = el.querySelector(`[data-id="${p.id}"]`);
@@ -525,6 +550,7 @@ function renderReviewBoard() {
         row.classList.remove('bump');
         void row.offsetWidth;
         row.classList.add('bump');
+        bumped = true;
       }
       sc.textContent = value;
     }
@@ -549,9 +575,12 @@ function renderReviewBoard() {
       row.classList.remove('up');
       void row.offsetWidth;
       row.classList.add('up');
+      overtook = true;
     }
     row.addEventListener('transitionend', () => (row.style.zIndex = ''), { once: true });
   }
+  if (overtook) Sfx.play('overtake');
+  else if (bumped) Sfx.play('points');
 }
 
 function startTimer(remainingMs) {
@@ -559,6 +588,7 @@ function startTimer(remainingMs) {
   clearInterval(timerInterval);
   const tick = () => {
     const s = Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000));
+    if ($('timer').textContent !== String(s) && s > 0 && s <= 5) Sfx.play('hurry');
     $('timer').textContent = s;
     $('timer').classList.toggle('low', s <= 10);
     if (s <= 0) clearInterval(timerInterval);
@@ -573,6 +603,7 @@ function startCountdown() {
   const el = $('countdownNum');
   const step = () => {
     el.innerHTML = Tiles.html(n > 0 ? String(n) : 'JÁ!');
+    Sfx.play(n > 0 ? 'tick' : 'go');
     if (n-- <= 0) clearInterval(countdownInterval);
   };
   step();
@@ -604,6 +635,7 @@ socket.on('board', (b) => {
     show('game');
     renderPlayerGrid($('playerGrid'), b.players, { showScore: true });
   } else if (b.state === 'ended') {
+    if (prevState === 'playing') Sfx.play('end');
     clearInterval(timerInterval);
     if (reviewFinal || (b.revealed && reviewStep < 0)) {
       reviewFinal = true;

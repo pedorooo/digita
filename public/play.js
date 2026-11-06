@@ -10,7 +10,6 @@ socket.on('build', (id) => {
 
 const TYPE_LABEL = { normal: 'normal', reversed: 'ao contrário', emoji: 'emoji', color: 'cor da tinta', opposite: 'oposto', number: 'número' };
 
-// pontos podem ter decimais (bônus de rapidez ×1,25)
 const pts = (n) => (Math.round((n || 0) * 100) / 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 
 function esc(s) {
@@ -133,6 +132,9 @@ $('joinScreen').addEventListener('submit', (e) => {
   join(code, name, sameRoom);
 });
 
+$('muteBtn').addEventListener('click', () => Sfx.toggle());
+Sfx.onChange((m) => ($('muteBtn').innerHTML = Icon(m ? 'speaker-slash' : 'speaker-high')));
+
 // reconexão automática (refresh da página ou queda de rede)
 socket.on('connect', () => {
   const s = JSON.parse(localStorage.getItem(STORE) || 'null');
@@ -164,6 +166,7 @@ socket.on('countdown', ({ remainingMs }) => {
   const el = $('countNum');
   const step = () => {
     el.innerHTML = Tiles.html(n > 0 ? String(n) : 'JÁ!');
+    Sfx.play(n > 0 ? 'tick' : 'go');
     if (navigator.vibrate) navigator.vibrate(40);
     n--;
   };
@@ -208,11 +211,17 @@ function flash(cls, hint) {
   setTimeout(() => card.classList.remove(cls), 350);
 }
 
-socket.on('answer:right', ({ answer, pts: p, fast }) =>
-  flash('right', `${Icon('check-circle')} ${esc(answer)} · <b>+${pts(p)}</b>${fast ? ` ${Icon('lightning')} rápido!` : ''}`),
-);
-socket.on('answer:skipped', ({ answer }) => flash('skip', `era: ${esc(answer)}`));
+socket.on('answer:right', ({ answer, pts: p, bonus = 0 }) => {
+  Sfx.play('correct');
+  if (bonus >= 2) Sfx.play('fast');
+  flash('right', `${Icon('check-circle')} ${esc(answer)} · <b>+${pts(p)}</b>${bonus ? ` ${Icon('lightning')} +${bonus} rapidez` : ''}`);
+});
+socket.on('answer:skipped', ({ answer }) => {
+  Sfx.play('skip');
+  flash('skip', `era: ${esc(answer)}`);
+});
 socket.on('answer:wrong', () => {
+  Sfx.play('wrong');
   const input = $('answer');
   input.classList.remove('shake');
   void input.offsetWidth;
@@ -244,6 +253,7 @@ $('skipBtn').addEventListener('click', () => {
 
 // fim do tempo: mostra só a própria pontuação e espera o host revelar
 socket.on('round:end', ({ score, words = 0 }) => {
+  Sfx.play('end');
   clearInterval(timerInterval);
   current = null;
   $('answer').blur();
@@ -255,6 +265,7 @@ socket.on('round:end', ({ score, words = 0 }) => {
 });
 
 socket.on('round:results', ({ ranking, me, awards, newRecords }) => {
+  Sfx.play(ranking[0]?.id === myId ? 'win' : 'reveal');
   const pos = ranking.findIndex((p) => p.id === myId);
   $('endPos').innerHTML = pos < 0 ? '—' : pos < 3 ? `${Icon('medal', `m${pos + 1}`)}<span>${pos + 1}º</span>` : `${pos + 1}º`;
   $('endWinner').innerHTML =

@@ -21,7 +21,7 @@ fs.cpSync(mod('@fontsource', 'fredoka', 'files'), path.join(dist, 'fonts'), { re
 const ICONS = [
   'crown', 'fire', 'medal', 'lightning', 'target', 'fast-forward', 'skip-forward', 'trophy', 'alarm', 'eye', 'star',
   'timer', 'check', 'check-circle', 'x', 'paper-plane-right', 'play', 'caret-left', 'caret-right', 'arrow-clockwise',
-  'confetti', 'swap', 'hourglass-medium', 'hand-waving', 'smiley-x-eyes', 'pause',
+  'confetti', 'swap', 'hourglass-medium', 'hand-waving', 'smiley-x-eyes', 'pause', 'speaker-high', 'speaker-slash',
 ];
 const sprite =
   '<svg xmlns="http://www.w3.org/2000/svg">' +

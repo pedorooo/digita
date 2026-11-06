@@ -10,7 +10,7 @@ Everyone gets the **same stack of words**:
 - **oposto** (opposite): type the antonym (`quente` → `frio`)
 - **número** (number): write the number out in words (`47` → `quarenta e sete`)
 
-Accents, spaces and hyphens are optional. Each mode is worth points (normal 1, ao contrário/emoji/oposto 2, número/cor da tinta 3) and answering in under 1 second gives ×1.25. At the end, the words are reviewed one by one with a live scoreboard; that review screen is the final ranking.
+Accents, spaces and hyphens are optional. Each mode is worth points (normal 1, ao contrário/emoji/oposto 2, número/cor da tinta 3) plus a speed bonus: +3 under 1.5 s, +2 under 2.5 s, +1 under 3.2 s, nothing slower (scores are always whole numbers). At the end, the words are reviewed one by one with a live scoreboard; that review screen is the final ranking.
 
 ## Running
 

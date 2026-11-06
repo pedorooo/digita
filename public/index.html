@@ -10,7 +10,10 @@
   <div class="host">
     <header>
       <h1 class="logo" data-tiles="DIGITA!">Digita!</h1>
-      <div class="room-code hidden" id="headerCode">Sala <b id="headerCodeText"></b></div>
+      <div class="header-right">
+        <div class="room-code hidden" id="headerCode">Sala <b id="headerCodeText"></b></div>
+        <button class="ghost icon-btn" id="muteBtn" aria-label="Ligar ou desligar o som"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#speaker-high"></use></svg></button>
+      </div>
     </header>
 
     <!-- LOBBY: QR no centro, jogadores ao redor -->
@@ -47,7 +50,7 @@
           <div class="opt-section">
             <h3>Modos <span class="opt-hint" id="modesHint"></span></h3>
             <div class="modes" id="modes"></div>
-            <p class="opt-note"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#lightning"></use></svg> Acertou em menos de 1 segundo: pontos ×1,25</p>
+            <p class="opt-note"><svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#lightning"></use></svg> Bônus de rapidez: até 1,5s <b>+3</b> · até 2,5s <b>+2</b> · até 3,2s <b>+1</b></p>
           </div>
           <div class="opt-actions">
             <button class="soft" id="optBack">Voltar</button>
@@ -106,7 +109,6 @@
         <button id="againBtn" class="big-btn hidden">Jogar de novo <svg class="ph" aria-hidden="true" focusable="false"><use href="/icons.svg#arrow-clockwise"></use></svg></button>
         <button class="ghost hidden" id="reviewAgainBtn">Rever palavras</button>
       </div>
-      <p class="muted center-text" id="reviewHint">Passa sozinho · espaço pausa/continua · setas ← → navegam</p>
     </section>
 
     <section id="connecting">
@@ -117,6 +119,7 @@
   <script src="/net.js"></script>
   <script src="/avatar.js"></script>
   <script src="/icons.js"></script>
+  <script src="/sound.js"></script>
   <script src="/tiles.js"></script>
   <script src="/host.js"></script>
 </body>
